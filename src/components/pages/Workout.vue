@@ -1,26 +1,43 @@
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { workoutProgram, exerciseDescriptions } from '../../utils';
 import Portal from '../Portal.vue';
 
-const selectedWorkout = 4;
+const workoutType = ['Push', 'Pull', 'Legs'];
+
+const { data, selectedWorkout } = defineProps({
+  data: Object,
+  selectedWorkout: Number,
+  handleSaveWorkout: Function,
+  isWorkoutComplete: Boolean,
+});
+
 const { workout, warmup } = workoutProgram[selectedWorkout];
-//let selectedExercise = null; NEcesitas un state variabel con ref
+//let selectedExercise = null; Necesitas un state variabel con ref
 let selectedExercise = ref(null);
-const exerciseDescription = exerciseDescriptions[selectedExercise];
+const exerciseDescription = computed(
+  () => exerciseDescriptions[selectedExercise.value],
+);
+
+function handleCloseModal() {
+  selectedExercise.value = null;
+}
 </script>
 
 <template>
-  <Portal v-if="selectedExercise">
+  <Portal :handleCloseModal="handleCloseModal" v-if="selectedExercise">
     <div class="exercise-description">
       <h3>{{ selectedExercise }}</h3>
       <div>
         <small>Desciption</small>
         <p>{{ exerciseDescription }}</p>
       </div>
-      <button>Close <i class="fa-solid fa-xmark"></i></button>
+      <button @click="handleCloseModal()">
+        Close <i class="fa-solid fa-xmark"></i>
+      </button>
     </div>
   </Portal>
+
   <section id="workout-card">
     <div class="plan-card card">
       <div class="plan-card-header">
@@ -34,7 +51,7 @@ const exerciseDescription = exerciseDescriptions[selectedExercise];
         </p>
         <i class="fa-solid fa-dumbbell"></i>
       </div>
-      <h2>{{ 'Push' }} Workout</h2>
+      <h2>{{ workoutType[selectedExercise + 1] }} Workout</h2>
     </div>
 
     <div class="workout-grid">
@@ -57,7 +74,7 @@ const exerciseDescription = exerciseDescriptions[selectedExercise];
         </div>
         <p>{{ w.sets }}</p>
         <p>{{ w.reps }}</p>
-        <input type="text" class="grid-weights" placeholder="14kg" disabled />
+        <input type="text" class="grid-weights" placeholder="14kg" />
       </div>
 
       <div class="workout-grid-line"></div>
@@ -69,16 +86,34 @@ const exerciseDescription = exerciseDescriptions[selectedExercise];
       <div class="workout-grid-row" v-for="(w, wIdx) in workout" :key="wIdx">
         <div class="grid-name">
           {{ w.name }}
-          <button><i class="fa-regular fa-circle-question"></i></button>
+          <button
+            @click="
+              () => {
+                selectedExercise = w.name;
+              }
+            "
+          >
+            <i class="fa-regular fa-circle-question"></i>
+          </button>
         </div>
+        <p>{{ w.sets }}</p>
         <p>{{ w.reps }}</p>
-        <input type="text" class="grid-weights" placeholder="14kg" disabled />
+        <input
+          v-model="data[selectedWorkout][w.name]"
+          type="text"
+          class="grid-weights"
+          placeholder="14kg"
+        />
       </div>
     </div>
 
     <div class="card workout-btns">
-      <button>Save & Exit <i class="fa-solid fa-save"></i></button>
-      <button>Complete <i class="fa-solid fa-left-arrow"></i></button>
+      <button @click="handleSaveWorkout">
+        Save & Exit <i class="fa-solid fa-save"></i>
+      </button>
+      <button :disabled="!isWorkoutComplete" @click="handleSaveWorkout">
+        Complete <i class="fa-solid fa-left-arrow"></i>
+      </button>
     </div>
   </section>
 </template>
@@ -112,6 +147,13 @@ plan-card {
 .workout-grid-row,
 .workout-grid-line {
   grid-column: span 7 / span 7;
+}
+
+.workout-grid-line {
+  margin: 0.5rem 0;
+  height: 3px;
+  border-radius: 2px;
+  background-color: var(--background-muted);
 }
 
 .grid-name {
@@ -159,6 +201,11 @@ plan-card {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  width: 100%;
+}
+
+.exercise-description h3 {
+  text-transform: capitalize;
 }
 
 .exercise-description button {
